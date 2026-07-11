@@ -1,0 +1,28 @@
+===== page 1 =====
+Oral history is the practice of recording, preserving, and interpreting the
+spoken testimony of people who lived through historical events. Unlike archival
+documents, oral testimony is co-produced in the interview situation: the
+questions asked, the rapport established, and the time elapsed since the events
+all shape what is remembered and how it is told. Methodologically, this means
+an oral history interview is never a transparent window onto the past; it is a
+memory artifact produced in the present.
+
+The reliability of testimony has therefore been a central debate in the field.
+Early critics dismissed oral sources as anecdotal and error-prone compared to
+written records. Practitioners answered that the distortions of memory are
+themselves historical evidence: what a community misremembers, embellishes, or
+silences reveals how the past matters to it now.
+
+===== page 2 =====
+Interview methodology developed to work with, rather than against, these
+properties of memory. Standard practice records the interview in full, prepares
+a verbatim transcript, and treats the recording as the primary source while the
+transcript serves as a finding aid. Quotation discipline follows from this
+hierarchy: a quoted passage should be verified against the recording, not
+reconstructed from notes taken during the interview, because interviewer notes
+compress and paraphrase in ways that silently alter meaning.
+
+Digital platforms have changed collection and access, but the epistemological
+questions remain the same: whose memories are collected, who controls the
+archive, and how later users can trace an interpretation back to the moment of
+testimony it claims to rest on.

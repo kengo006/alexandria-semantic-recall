@@ -1,0 +1,12 @@
+# derived data — your corpus's chunks and vectors live here; never commit them
+index/
+index_prev/
+lance_db/
+
+# model weights (downloaded on first run)
+model_cache/
+
+# environments / caches
+.venv/
+__pycache__/
+*.pyc

@@ -1,0 +1,19 @@
+[project]
+name = "alexandria-semantic-recall"
+version = "0.1.0"
+description = "Local semantic recall MCP server over a page-marked text layer — the reference implementation of alexandria's optional-integrations §2 contract. 100% local, no torch, recall-only by design."
+requires-python = ">=3.11"
+dependencies = [
+    "fastembed==0.8.0", # ONNX embeddings, no torch, friendly to 16 GB machines; version PINNED so a future pooling change can't silently break consistency with an existing index
+    "numpy>=1.26",
+    "mcp>=1.2",         # official MCP SDK (FastMCP)
+    "lancedb>=0.34.0",
+]
+
+[tool.uv]
+package = false          # dependencies only; this is a script collection, not a package
+
+# Quickstart:
+#   build index  ->  uv run python build_index.py "<corpus_folder>"
+#   CLI query    ->  uv run python search_core.py "your query"
+#   MCP server   ->  uv run python server.py   (stdio, for subagents)
