@@ -113,11 +113,23 @@ be discovered mid-query. Set `SEMANTIC_RECALL_RERANKER` to a smaller cross-encod
 if that is too much. Requires the LanceDB backend.
 
 **Provenance of the default** (verified 2026-08-02, re-check before relying on it):
-the upstream model is Apache-2.0 and very widely used; the ONNX conversion
-repository it is fetched from **declares no licence of its own**, and its
-organisation is not HF-verified. What ships is weights, a tokenizer and configs —
-no executable code. None of that is disqualifying, and none of it should be
-discovered by a reader after the download has started.
+the default is an ONNX conversion of
+[`BAAI/bge-reranker-v2-m3`](https://huggingface.co/BAAI/bge-reranker-v2-m3),
+which is Apache-2.0 and very widely used. The conversion repository it is
+actually fetched from —
+[`onnx-community/bge-reranker-v2-m3-ONNX`](https://huggingface.co/onnx-community/bge-reranker-v2-m3-ONNX)
+— **declares no licence of its own**, and its organisation is not HF-verified.
+What ships is weights, a tokenizer and configs — no executable code. None of that
+is disqualifying, and none of it should be discovered by a reader after the
+download has started.
+
+If the undeclared licence is a blocker in your setting, the closest alternative
+that is both multilingual and licensed is
+[`BAAI/bge-reranker-base`](https://huggingface.co/BAAI/bge-reranker-base) (MIT,
+about half the size, published by the upstream organisation itself). The
+English-only cross-encoders bundled with fastembed are smaller still, but this
+project's whole point is cross-lingual recall, so they are not a like-for-like
+swap.
 
 ⚠ **The `score` it returns is a reranker logit, not a cosine.** It orders results
 and nothing else — there is no value at which it becomes "relevant", and scores
@@ -152,4 +164,4 @@ quote may be used at all. Merging them inflates the first with unrelated reasons
 
 ## Status
 
-Extracted from a production system (2026) where it serves a five-role academic writing workflow — see [alexandria](https://github.com/kengo006/alexandria) for the architecture it plugs into. Issues and adaptations welcome. [MIT](LICENSE).
+Extracted from a production system (2026) where it serves a six-role academic writing workflow — see [alexandria](https://github.com/kengo006/alexandria) for the architecture it plugs into. Issues and adaptations welcome. [MIT](LICENSE).
