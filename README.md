@@ -96,6 +96,51 @@ Then give your search agent one standing instruction — this is the discipline 
 
 alexandria's Searcher role ships with this wiring already described (search path D).
 
+## Optional: deep recall, and knowing when a miss means nothing
+
+Two capabilities that stay off unless configured.
+
+**`semantic_search_deep`** recalls wide, widens each hit into its surrounding
+passage, reranks with a cross-encoder, and returns the best few. Reach for it
+deliberately: it is for the case where the passage you need is in the corpus but
+sits below the plain-recall cutoff. When plain recall is already precise,
+reranking can scatter it.
+
+⚠ **The first call downloads ~2.13 GiB** — the ONNX graph plus its external weight
+file — and is slow; later calls reuse the cached model. That is ten times the
+0.22 GB embedding model above, which is why it is stated here rather than left to
+be discovered mid-query. Set `SEMANTIC_RECALL_RERANKER` to a smaller cross-encoder
+if that is too much. Requires the LanceDB backend.
+
+**Provenance of the default** (verified 2026-08-02, re-check before relying on it):
+the upstream model is Apache-2.0 and very widely used; the ONNX conversion
+repository it is fetched from **declares no licence of its own**, and its
+organisation is not HF-verified. What ships is weights, a tokenizer and configs —
+no executable code. None of that is disqualifying, and none of it should be
+discovered by a reader after the download has started.
+
+⚠ **The `score` it returns is a reranker logit, not a cosine.** It orders results
+and nothing else — there is no value at which it becomes "relevant", and scores
+from different queries are not comparable. The original cosine comes back as
+`recall_score`.
+
+**The degradation registry.** Point `SEMANTIC_RECALL_DEGRADED` at a JSON file
+listing corpus files whose text layer you know to be unreliable, and
+`semantic_search_info` will report it. The design decision worth copying even if
+you never use this file:
+
+> When the registry cannot be read, the report says **`"unknown"` — never `0`.**
+
+To anyone deciding whether a search *miss* is evidence, "zero degraded files" and
+"I could not read the registry" are opposite claims. The first says a negative
+result is trustworthy; the second says nothing at all. Defaulting a failed read to
+zero makes the caller assert precisely where it should have held back.
+
+A second key, `non_citable`, is reported separately and is deliberately not added
+to the degraded count. They answer different questions: `files` governs whether a
+*negative* conclusion is trustworthy; `non_citable` governs whether a *positive*
+quote may be used at all. Merging them inflates the first with unrelated reasons.
+
 ## Design notes
 
 - **Chunks are sized in tokens (≤120, sentence-aligned), using the embedding model's own tokenizer** — not in characters. The char↔token ratio varies ~3× across languages (Latin prose ≈3.9 chars/token, CJK ≈1.4), so the v0.1 500-character windows silently overflowed the model's 128-token truncation on CJK text: **over half of every CJK chunk never entered the index**, while Western text lost only ~3% — invisible unless you test cross-lingually, which is exactly this tool's headline claim. Measured: embedding a full chunk vs. only its first 128 tokens returns cosine 1.0000. The size floor is in tokens too (a character floor filters CJK chunks out). Chunks stay small because the consumer wants precise pointers, not summaries; page numbers are computed from character offsets against the page marks. Character chunking survives only as a fallback when the `tokenizers` package is unavailable.

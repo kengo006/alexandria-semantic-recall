@@ -3,6 +3,50 @@
 This repository is a reference implementation extracted from a live production
 instance; releases are curated snapshots.
 
+## v0.3 — 2026-08-02 · Deep recall, and an honest "unknown"
+
+Two additions, both optional, both off unless you turn them on.
+
+- **New tool `semantic_search_deep`** — recall wide, widen each hit into its
+  surrounding passage, rerank with a cross-encoder, return the best few. It exists
+  for one situation: the passage you need is in the corpus but sits below the
+  plain-recall cutoff. It is **not** a better default — when plain recall is
+  already precise, reranking can scatter it just as easily as it can help.
+  Chunks are sized for recall, not for judgement, which is why the passage is
+  widened before the reranker ever sees it.
+  ⚠ **`score` is a reranker logit, not a cosine.** It orders results and nothing
+  else: no threshold makes it "relevant", and scores from different queries are not
+  comparable. The original cosine is returned alongside it as `recall_score` so the
+  two views stay separable. Reranker is lazy-loaded and configurable via
+  `SEMANTIC_RECALL_RERANKER`; requires the LanceDB backend.
+- **New `degraded_status()`, surfaced through `semantic_search_info`** — reads an
+  optional degradation registry (`SEMANTIC_RECALL_DEGRADED`) listing corpus files
+  whose text layer is known-unreliable, so a caller can tell when a *miss* means
+  nothing.
+  🔑 **It returns `"unknown"`, never `0`, when the registry cannot be read.** To a
+  caller deciding whether a search miss is evidence, "zero degraded files" and
+  "I could not read the registry" are opposite statements — the first says a
+  negative result is trustworthy, the second says nothing at all. Rounding a failed
+  read down to zero makes the caller assert exactly where it should have held back.
+  A declared count that disagrees with the actual length is reported as
+  `count_mismatch` rather than silently resolved.
+  ⚠ **The default reranker pulls ~2.13 GiB on first use** - ten times the embedding
+  model this project fetches by default - and that number is now stated in the
+  tool docstring, the README and beside the constant rather than left to be
+  discovered mid-query. Provenance is disclosed with it: the upstream model is
+  Apache-2.0 and heavily used, while the ONNX conversion repository declares no
+  licence of its own and its organisation is not HF-verified. Weights and a
+  tokenizer only; no executable code.
+  `_ensure_reranker_external_data()` now swallows **only** "this repository has no
+  external-data file". A bare except there would have cancelled the function's
+  reason for existing - a timeout or a full disk would surface exactly where the
+  call was meant to prevent it.
+
+  A second key, `non_citable`, is reported separately and deliberately **not**
+  merged into the degraded count: `files` governs whether a *negative* conclusion
+  is trustworthy, `non_citable` governs whether a *positive* quote may be used.
+  Folding them together inflates the first with unrelated reasons.
+
 ## v0.2 — 2026-07-20 · Token-based chunking (correctness fix)
 
 - **`index_lib.py`: chunks are now sized in tokens (≤120), using the embedding
