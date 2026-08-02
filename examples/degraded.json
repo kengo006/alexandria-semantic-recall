@@ -1,0 +1,11 @@
+{
+  "generated": "2026-08-02T12:00:00Z",
+  "count": 2,
+  "files": [
+    "examples/corpus/monuments_and_memory.txt",
+    "examples/corpus/oral_history_methods.txt"
+  ],
+  "non_citable": [
+    "examples/corpus/oral_history_methods.txt"
+  ]
+}

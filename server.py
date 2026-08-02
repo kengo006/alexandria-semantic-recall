@@ -53,7 +53,7 @@ def semantic_search_deep(query: str, k: int = 8) -> list[dict]:
     ⚠ Recall layer only, exactly as with semantic_search: verbatim quotes, page
     numbers and emphasis are verified against the source PDF, never cited from here.
 
-    ⚠ **First call downloads ~2.13 GiB** (the ONNX graph plus its external weight
+    ⚠ **First call downloads ~2.3 GB** (the ONNX graph plus its external weight
     file) and is slow; later calls reuse the cached model. That is ten times the
     embedding model this project fetches by default - worth knowing before you
     invoke this rather than after. Requires the LanceDB backend. Point

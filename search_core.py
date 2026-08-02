@@ -29,9 +29,10 @@ MODEL_CACHE = os.path.join(HERE, "model_cache")  # fixed cache dir: %TEMP% gets 
 # Optional deep-dive reranker: a cross-encoder, ONNX only (no torch in this project).
 # Loaded lazily - nothing is downloaded unless semantic_search_deep is actually called.
 #
-# ⚠ The default pulls ~2.13 GiB on first use (the ONNX graph plus its external
-# weight file). That is ten times the embedding model this project downloads by
-# default, so it is stated here rather than left to be discovered.
+# ⚠ The default pulls ~2.3 GB on first use (2,288,835,892 bytes measured
+# 2026-08-02: the ONNX graph plus its external weight file). That is ten times
+# the embedding model this project downloads by default, so it is stated here
+# rather than left to be discovered.
 # Provenance, verified 2026-08-02: the upstream model (BAAI/bge-reranker-v2-m3) is
 # Apache-2.0 and heavily used; the ONNX conversion repository below declares **no
 # licence of its own** and its organisation is not an HF-verified one. Weights and

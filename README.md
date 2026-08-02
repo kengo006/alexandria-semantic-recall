@@ -106,7 +106,39 @@ deliberately: it is for the case where the passage you need is in the corpus but
 sits below the plain-recall cutoff. When plain recall is already precise,
 reranking can scatter it.
 
-⚠ **The first call downloads ~2.13 GiB** — the ONNX graph plus its external weight
+**What it does — four measured queries.** On a production corpus of a few hundred
+scholarly texts, four queries fixed before the run — two question-shaped, one
+term-shaped, one keyword-shaped — each recalled thirty candidates and were
+reranked. In **all four**, plain recall's top hit was not the reranker's first
+choice: the passage the reranker put first had been sitting at plain rank 6, 8, 5
+and 16, and its top three drew on passages as deep as rank 24. Cosine spread
+across the thirty ranged from **0.0404 to 0.1251**, a factor of three; the
+reranker's logits spread across 7.6 to 9.7.
+
+🔑 **The signal we expected to find, and did not.** The natural hypothesis is that
+bunched cosines are that signal: if the top thirty sit inside a few hundredths,
+the ordering among them is close to arbitrary and there is something to fix; if
+the top hit stands clearly apart, there is not. **These four do not support it.**
+The tightest spread did displace plain rank 1 the furthest, to rank 25 — but the
+widest spread, whose top two stood apart from the pack by sixteen times the
+median gap, still pushed plain rank 1 down to rank 13, while the two middling
+spreads moved it only to rank 6. So there is no cheap pre-check on offer here:
+whether reranking earns its download is not visible in the recall scores.
+
+**Who that changes things for.** The reranker's first choice came from plain ranks
+6, 8, 5 and 16 — in four out of four, never from the plain top three. So if your
+workflow reads the first few recall hits and stops, this replaced the answer every
+time; if you already read all thirty, it mostly reorders what you were going to read
+anyway. And note the hard edge, which is structural rather than measured: reranking
+only ever reorders the recall window. A passage that plain recall put at rank 45 is
+exactly as invisible to `semantic_search_deep` as it was to `semantic_search` — this
+widens the *ordering*, never the *net*.
+
+⚠ **Not measured: whether the new order is better.** Reading the passages, the
+reranked top hits were on-question where the top cosine hits were adjacent to the
+topic — but that is a reading of four queries, not a benchmark.
+
+⚠ **The first call downloads ~2.3 GB** — the ONNX graph plus its external weight
 file — and is slow; later calls reuse the cached model. That is ten times the
 0.22 GB embedding model above, which is why it is stated here rather than left to
 be discovered mid-query. Set `SEMANTIC_RECALL_RERANKER` to a smaller cross-encoder
@@ -152,6 +184,32 @@ A second key, `non_citable`, is reported separately and is deliberately not adde
 to the degraded count. They answer different questions: `files` governs whether a
 *negative* conclusion is trustworthy; `non_citable` governs whether a *positive*
 quote may be used at all. Merging them inflates the first with unrelated reasons.
+
+**The file it expects** (a runnable copy is at `examples/degraded.json`):
+
+```json
+{
+  "generated": "2026-08-02T12:00:00Z",
+  "count": 2,
+  "files": [
+    "examples/corpus/monuments_and_memory.txt",
+    "examples/corpus/oral_history_methods.txt"
+  ],
+  "non_citable": [
+    "examples/corpus/oral_history_methods.txt"
+  ]
+}
+```
+
+| key | required | meaning |
+|---|---|---|
+| `files` | **yes** | array of paths whose text layer is unreliable — grep on these can return zero for material that is present. Anything else makes the report `"unknown"`. |
+| `count` | no | your generator's own count. If it disagrees with the length of `files`, the report says so in `count_mismatch` instead of quietly picking one. |
+| `non_citable` | no | array (or an object with a `files` array) of paths that are recallable but have no page-bearing original to quote from. |
+| `generated` | no | passed through untouched, so a consumer can see how stale the registry is. |
+
+Paths are yours to interpret: this server reports counts and shape, it does not
+resolve them against your corpus.
 
 ## Design notes
 

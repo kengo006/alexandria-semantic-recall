@@ -7,6 +7,12 @@ instance; releases are curated snapshots.
 
 Two additions, both optional, both off unless you turn them on.
 
+*(Documentation follow-up, same day: the registry's schema is now written down
+with a runnable `examples/degraded.json`, the deep-recall section carries four
+measured queries — including the signal we expected to find and did not, and the
+structural limit that reranking widens the ordering but never the net — and download
+sizes are stated in one unit throughout.)*
+
 - **New tool `semantic_search_deep`** — recall wide, widen each hit into its
   surrounding passage, rerank with a cross-encoder, return the best few. It exists
   for one situation: the passage you need is in the corpus but sits below the
@@ -30,7 +36,7 @@ Two additions, both optional, both off unless you turn them on.
   read down to zero makes the caller assert exactly where it should have held back.
   A declared count that disagrees with the actual length is reported as
   `count_mismatch` rather than silently resolved.
-  ⚠ **The default reranker pulls ~2.13 GiB on first use** - ten times the embedding
+  ⚠ **The default reranker pulls ~2.3 GB on first use** - ten times the embedding
   model this project fetches by default - and that number is now stated in the
   tool docstring, the README and beside the constant rather than left to be
   discovered mid-query. Provenance is disclosed with it: the upstream model is
