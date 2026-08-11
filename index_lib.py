@@ -39,6 +39,7 @@ from __future__ import annotations
 import functools
 import os
 import re
+import sys
 from dataclasses import dataclass, asdict
 
 FF = "\f"
@@ -52,6 +53,19 @@ OVERLAP_TOKENS = 24      # ≈ the v0.1 overlap ratio (100/500)
 MIN_TOKENS = 30          # the floor must be tokens too (see module docstring)
 
 
+def _warn_char_fallback(reason: str) -> None:
+    """The character fallback is a **silent correctness downgrade**, so it must not be
+    silent. This module documents that character windows overflow the model's 128-token
+    truncation on CJK text — over half of every CJK chunk never reaches the index. A
+    cross-lingual recall tool sliding into exactly that, quietly, is worse than stopping.
+    Printed once (lru_cache on _tokenizer means this path runs at most once per process).
+    """
+    print("[index_lib] WARNING: falling back to CHARACTER chunking — " + reason + "."
+          "\n            On CJK text this silently truncates chunks (see module"
+          " docstring). Install `tokenizers` to restore token chunking.",
+          file=sys.stderr, flush=True)
+
+
 @functools.lru_cache(maxsize=1)
 def _tokenizer():
     """Load the SAME tokenizer the embedding model uses (not an estimate,
@@ -61,6 +75,7 @@ def _tokenizer():
     try:
         from tokenizers import Tokenizer
     except ImportError:
+        _warn_char_fallback("the `tokenizers` package is not installed")
         return None
     for root, _dirs, files in os.walk(MODEL_CACHE):
         if "tokenizer.json" in files:
@@ -73,7 +88,20 @@ def _tokenizer():
             except Exception:
                 pass
             return tok
+    _warn_char_fallback("no tokenizer.json found under %s" % MODEL_CACHE)
     return None
+
+
+def is_workfile(path: str) -> bool:
+    """Is this a working file rather than corpus text?
+
+    One rule, one implementation. It used to live in two of the four tools that
+    walk a corpus (`migrate_to_lance` and `incremental_update` excluded these,
+    `build_index` did not), which meant the numpy index and the LanceDB table
+    disagreed about what the corpus contains — while the README promised the
+    search API was identical on both backends. The API was; the corpus was not.
+    """
+    return os.path.basename(path).startswith("_")
 
 
 @dataclass

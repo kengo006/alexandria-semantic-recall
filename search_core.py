@@ -96,8 +96,11 @@ def _embed_query(query: str) -> np.ndarray:
 def search(query: str, k: int = 8) -> list[dict]:
     q = _embed_query(query)
     if _use_lance():
-        # nprobes=100 (scan 100/512 partitions) + refine_factor=20 (re-rank on raw
-        # vectors) matches exact numpy recall in production; warm query ~55ms.
+        # nprobes=100 + refine_factor=20 (re-rank on raw vectors) matched exact numpy
+        # recall in production; warm query ~55ms there. ⚠ num_partitions is
+        # min(512, max(16, sqrt(N))) (build_lance_index), so 100 is a full scan on a
+        # small table and a fifth of them only at ~262k+ chunks — the ratio is not a
+        # constant, and neither is the latency.
         rows = (_lance_table().search(q).metric("cosine")
                 .nprobes(100).refine_factor(20).limit(k).to_list())
         return [{

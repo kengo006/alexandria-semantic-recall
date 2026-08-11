@@ -20,7 +20,7 @@ from datetime import datetime
 import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from index_lib import chunk_text  # noqa: E402
+from index_lib import chunk_text, is_workfile  # noqa: E402
 
 try:
     sys.stdout.reconfigure(encoding="utf-8")  # Windows narrow-codepage console guard
@@ -34,7 +34,11 @@ MODEL_CACHE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "model_ca
 
 
 def load_corpus(root: str):
-    files = sorted(glob.glob(os.path.join(root, "**", "*.txt"), recursive=True))
+    # is_workfile lives in index_lib so that every tool walking a corpus applies the
+    # same rule. This step used to be the one that did not, so the numpy index held
+    # working-file chunks the LanceDB table had dropped.
+    files = sorted(p for p in glob.glob(os.path.join(root, "**", "*.txt"), recursive=True)
+                   if not is_workfile(p))
     all_chunks = []
     for p in files:
         try:

@@ -222,4 +222,4 @@ resolve them against your corpus.
 
 ## Status
 
-Extracted from a production system (2026) where it serves a six-role academic writing workflow — see [alexandria](https://github.com/kengo006/alexandria) for the architecture it plugs into. Issues and adaptations welcome. [MIT](LICENSE).
+Extracted from a production system (2026) where it serves a six-role academic writing workflow — see [alexandria](https://github.com/kengo006/alexandria) for the architecture it plugs into. Release history, and the reasoning behind each change, is in [CHANGELOG.md](CHANGELOG.md). Issues and adaptations welcome. [MIT](LICENSE).

@@ -18,6 +18,9 @@ from __future__ import annotations
 import sys, os, json, time
 import numpy as np
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from index_lib import is_workfile  # noqa: E402
+
 try:
     sys.stdout.reconfigure(encoding="utf-8")
 except Exception:
@@ -58,7 +61,7 @@ def main():
     with open(os.path.join(IDX, "chunks.jsonl"), encoding="utf-8") as f:
         for i, line in enumerate(f):
             c = json.loads(line)
-            if os.path.basename(c["file"]).startswith("_"):   # exclude working-file noise
+            if is_workfile(c["file"]):        # shared rule, see index_lib.is_workfile
                 skipped += 1
                 continue
             buf.append({

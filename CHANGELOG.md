@@ -3,6 +3,31 @@
 This repository is a reference implementation extracted from a live production
 instance; releases are curated snapshots.
 
+## v0.4 — 2026-08-11 · What the two backends disagreed about
+
+A line-by-line read of every file in this repository, prompted by nothing going
+wrong. Four defects, none of which any mechanical scan here had reported.
+
+- 🔴 **The two backends did not hold the same corpus.** Working files (basename
+  starting with `_`) were excluded by `migrate_to_lance.py` and
+  `incremental_update.py` but **not** by `build_index.py` — so the numpy index
+  carried chunks the LanceDB table had dropped, while the README stated that "the
+  `search(query,k)` API is identical on both". The API was; the corpus was not.
+  The rule now lives once, in `index_lib.is_workfile()`, and all three callers use
+  it. **It had no test** — which is how it drifted — and now it has one
+  (`_test_incremental.py` step E, asserting both directions).
+- 🔴 **The character-chunking fallback was silent.** `index_lib` falls back to
+  character windows when `tokenizers` is unavailable — the exact path its own
+  docstring documents as losing over half of every CJK chunk. For a tool whose
+  headline is cross-lingual recall, sliding into that quietly is worse than
+  stopping: it now prints a warning naming the cause. And `tokenizers` is
+  **declared** rather than relied on transitively through `fastembed`.
+- 🔴 **`pyproject.toml` still said `version = "0.1.0"`** — two releases stale.
+- **`search_core`'s nprobes comment** claimed "100/512 partitions". `num_partitions`
+  is `min(512, max(16, sqrt(N)))`, so that ratio holds only past ~262k chunks; the
+  comment stated one instance's configuration as a general fact.
+- README Status now points at this file.
+
 ## v0.3 — 2026-08-02 · Deep recall, and an honest "unknown"
 
 Two additions, both optional, both off unless you turn them on.

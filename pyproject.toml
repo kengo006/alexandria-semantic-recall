@@ -1,6 +1,6 @@
 [project]
 name = "alexandria-semantic-recall"
-version = "0.1.0"
+version = "0.3.0"   # keep in step with CHANGELOG.md / the release tag
 description = "Local semantic recall MCP server over a page-marked text layer — the reference implementation of alexandria's optional-integrations §2 contract. 100% local, no torch, recall-only by design."
 requires-python = ">=3.11"
 dependencies = [
@@ -8,6 +8,7 @@ dependencies = [
     "numpy>=1.26",
     "mcp>=1.2",         # official MCP SDK (FastMCP)
     "lancedb>=0.34.0",
+    "tokenizers>=0.15", # index_lib chunks by TOKENS using the embedding model's own tokenizer; without it the char fallback silently truncates CJK chunks (see index_lib docstring). Declared rather than relied on transitively.
 ]
 
 [tool.uv]

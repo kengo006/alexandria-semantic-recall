@@ -97,6 +97,23 @@ def main():
         r = iu.run(lance, corpus)
         assert r["added"] == 0 and r["removed"] == 0 and r["changed"] == 0, r
         print("[D idempotent] OK · second run sees no changes ✓\n")
+
+        # E: working files (`_`-prefixed) are corpus-invisible on EVERY path.
+        # This rule had no test, which is how it came to live in two of the four
+        # tools that walk a corpus and not in the other two — the numpy index held
+        # chunks the LanceDB table had dropped, while the README promised the search
+        # API was identical on both backends.
+        w(os.path.join(corpus, "archives", "_scratch_notes.txt"),
+          make_txt("scratch working notes that must never be recalled"))
+        r = iu.run(lance, corpus)
+        assert r["added"] == 0, f"working file entered the delta: {r}"
+        assert not any("_scratch_notes" in h
+                       for h in hits(lance, model, "scratch working notes")), \
+            "working file is recallable"
+        from index_lib import is_workfile
+        assert is_workfile("_scratch_notes.txt") and not is_workfile("scratch.txt"), \
+            "is_workfile does not discriminate"      # the rule itself, both directions
+        print("[E workfile] OK · `_`-prefixed file ignored by the delta and unrecallable ✓\n")
         print("=== all tests passed ===")
     finally:
         shutil.rmtree(d, ignore_errors=True)

@@ -57,7 +57,7 @@ from datetime import datetime
 import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from index_lib import chunk_text  # noqa: E402
+from index_lib import chunk_text, is_workfile  # noqa: E402
 
 try:
     sys.stdout.reconfigure(encoding="utf-8")
@@ -84,7 +84,7 @@ def scan_corpus(root: str) -> dict:
     as the table's file column."""
     out = {}
     for p in glob.glob(os.path.join(root, "**", "*.txt"), recursive=True):
-        if os.path.basename(p).startswith("_"):
+        if is_workfile(p):          # shared rule, see index_lib.is_workfile
             continue
         st = os.stat(p)
         out[os.path.relpath(p, root)] = {"mtime": round(st.st_mtime, 2), "size": st.st_size}
