@@ -129,16 +129,81 @@ def search(query: str, k: int = 8) -> list[dict]:
     return out
 
 
-def degraded_status() -> dict:
-    """Report the degradation registry - and report **"unknown", never 0, when it cannot be read.**
+# The categories a registry holds are found by *structure*, not by a list of known
+# names: a top-level array is a category, and so is a top-level object carrying a
+# `files` array. Everything else (version, generated, counts, notes) is metadata.
+# Why structure: a reader that knows a fixed set of names goes silent - not wrong,
+# silent - the day the registry grows a category it has not heard of. Upstream, a
+# reader that knew one key said nothing through two new categories. A category this
+# server has no instruction for is still reported, by name, and says so.
+_META_KEYS = {"version", "generated", "generator", "last_checked", "note", "notes",
+              "schema", "count", "counts"}
 
-    This is the only genuinely important design decision in this function. To a
-    caller deciding whether a search miss means anything, "the registry lists zero
-    degraded files" and "I could not read the registry" are *opposite* statements:
-    the first says a negative result is trustworthy, the second says nothing at all.
-    Defaulting a failed read to 0 makes the caller assert exactly when it should
-    have held back. Same family as an empty-sample check that passes because it ran
-    over nothing.
+# One line of instruction per documented category (alexandria's
+# shared/degradation-registry.md). The categories prescribe different, sometimes
+# opposite, actions - which is why one count for all of them is the failure mode,
+# not a summary of the answer.
+_MEANINGS = {
+    "unreliable_recall": ("grep is unreliable on these files: a zero hit count proves nothing; "
+                          "change file, wording, or access path"),
+    "unreliable_order": ("grep is reliable and a zero hit count still counts; but never read what "
+                         "sits beside a hit as context, and never quote across lines"),
+    "not_citable": ("use for leads; never cite a page number from these files, and quote "
+                    "verbatim only where the entry says the wording is final"),
+    "delisted": ("repaired and off the active list - but read the entry: it may record a limit "
+                 "that outlived the repair"),
+    # The two-key form this server read up to v0.4 is still read.
+    "files": ("(v0.4 key, same as unreliable_recall) grep is unreliable on these files: "
+              "a zero hit count proves nothing"),
+    "non_citable": ("(v0.4 key, same as not_citable) use for leads; never cite a page number "
+                    "from these files"),
+}
+
+
+def _meaning(d: dict, key: str):
+    """The registry's own wording wins; this server's table fills in only where it has none.
+
+    An object-shaped category carries its wording as `meaning`. An array-shaped one has
+    nowhere to put a field, so its wording lives beside it as a top-level `<key>_meaning`
+    - otherwise the only way to give an array category an instruction would be to wrap
+    it in an object, and a reader that expects an array would then stop seeing it."""
+    val = d.get(key)
+    if isinstance(val, dict) and isinstance(val.get("meaning"), str):
+        return val["meaning"]
+    if isinstance(d.get(key + "_meaning"), str):
+        return d[key + "_meaning"]
+    return _MEANINGS.get(key)
+
+
+def _categories(d: dict) -> dict:
+    """{name: entries} for every category in the registry, found by structure."""
+    out = {}
+    for key, val in d.items():
+        if key in _META_KEYS:
+            continue
+        if isinstance(val, list):
+            out[key] = val
+        elif isinstance(val, dict) and isinstance(val.get("files"), list):
+            out[key] = val["files"]
+    return out
+
+
+def degraded_status() -> dict:
+    """Report the degradation registry: **every category by name**, and **"unknown",
+    never 0, when it cannot be read.**
+
+    Two design decisions, both worth copying. First: to a caller deciding whether a
+    search miss means anything, "the registry lists zero degraded files" and "I could
+    not read the registry" are *opposite* statements - the first says a negative
+    result is trustworthy, the second says nothing at all. Defaulting a failed read
+    to 0 makes the caller assert exactly when it should have held back. Same family
+    as an empty-sample check that passes because it ran over nothing.
+
+    Second: the categories prescribe different, sometimes opposite, actions. Under
+    `unreliable_recall` a zero hit count proves nothing; under `unreliable_order` it
+    still counts. One number for all of them would tell the caller the wrong thing
+    about every category folded into it. So each category comes back under its own
+    name, with its count and one line of instruction.
 
     Not cached: the registry is a living file, regenerated after each repair batch,
     and a cached count would hand out stale numbers.
@@ -153,33 +218,48 @@ def degraded_status() -> dict:
         return {"status": "unknown", "reason": "registry not found at %s" % DEGRADED_REGISTRY}
     except (json.JSONDecodeError, OSError) as e:
         return {"status": "unknown", "reason": "%s: %r" % (type(e).__name__, e)}
+    if not isinstance(d, dict):
+        return {"status": "unknown", "reason": "malformed registry: the top level is not an object"}
 
-    files = d.get("files")
-    if not isinstance(files, list):
-        return {"status": "unknown", "reason": "malformed registry: 'files' is not an array"}
+    cats = _categories(d)
+    if not cats:
+        # An object with no category in it is not "no degraded files". It is a file
+        # this server cannot read as a registry, and it says so.
+        return {"status": "unknown",
+                "reason": ("malformed registry: no category found (a category is a top-level "
+                           "array, or an object with a 'files' array)")}
 
     out = {
         "status": "ok",
-        "degraded_files": len(files),
         "generated": d.get("generated"),
-        "meaning": "grep is unreliable on these files (0 hits != absent); semantic recall still works",
+        "counts": {k: len(v) for k, v in cats.items()},
+        "meaning": {k: _meaning(d, k) for k in cats},
     }
-    # A declared count that disagrees with the actual length means the generator
-    # drifted. Surface both rather than silently picking one.
-    declared = d.get("count")
-    if declared is not None and declared != len(files):
-        out["count_mismatch"] = {"declared": declared, "actual": len(files)}
 
-    # A second, independent key: files that are recallable but not citable - sources
-    # with no page-bearing original behind them. The two keys answer different
-    # questions and must not be merged: "files" governs whether a *negative*
-    # conclusion is trustworthy; "non_citable" governs whether a *positive* quote may
-    # be used. Folding one into the other inflates the first with unrelated reasons.
-    nc = d.get("non_citable")
-    if isinstance(nc, list):
-        out["non_citable"] = len(nc)
-    elif isinstance(nc, dict):
-        out["non_citable"] = len(nc.get("files", []))
+    # A declared count that disagrees with the actual length means the generator
+    # drifted. Report the measured value and surface both, rather than pick one.
+    # Declared counts live in `counts` (current form), in `count` (v0.4, for `files`),
+    # or on an object-shaped category itself.
+    declared = dict(d["counts"]) if isinstance(d.get("counts"), dict) else {}
+    if "count" in d and "files" in cats:
+        declared.setdefault("files", d["count"])
+    for k in cats:
+        if isinstance(d[k], dict) and "count" in d[k]:
+            declared.setdefault(k, d[k]["count"])
+    mismatch = {k: {"declared": n, "actual": out["counts"].get(k, "absent")}
+                for k, n in declared.items() if out["counts"].get(k) != n}
+    if mismatch:
+        out["count_mismatch"] = mismatch
+
+    unexplained = sorted(k for k in cats if out["meaning"][k] is None)
+    if unexplained:
+        # Reported, not dropped: the caller learns the category exists, and that this
+        # server does not know what to tell it about that category.
+        out["categories_without_meaning"] = unexplained
+    if "files" in cats or "non_citable" in cats:
+        out["registry_form"] = ("v0.4 two-key form (files / non_citable): still read; the current "
+                                "form is the four categories in alexandria's "
+                                "shared/degradation-registry.md")
     return out
 
 

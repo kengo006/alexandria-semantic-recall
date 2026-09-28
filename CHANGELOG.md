@@ -3,6 +3,45 @@
 This repository is a reference implementation extracted from a live production
 instance; releases are curated snapshots.
 
+## v0.5 — 2026-09-28 · Every category, by name
+
+The degradation self-report was behind the contract it implements. alexandria's
+registry has had four categories since its v3.6, and the contract asks the index to
+report each by name; this server still read the older two-key form and returned one
+count — the shape that contract warns against, because the categories prescribe
+different, sometimes opposite, actions. alexandria v4.0 said so in its own
+`optional-integrations.md`. The upstream instance had made this change on 2026-08-23;
+it missed the v0.4 cut, and the comparison meant to catch such gaps started its count
+from the wrong date.
+
+- 🔴 **Breaking: `degraded_files` and the flat `non_citable` count are gone.** The
+  `degraded` block now carries `counts` and `meaning`, each keyed by category. A
+  caller that read `degraded_files` now gets nothing instead of a number that meant
+  less than it looked.
+- **Categories are found by structure, not by name**: any top-level array, or an
+  object with a `files` array. A category this server has never heard of is still
+  reported, and listed in `categories_without_meaning`. Upstream, a reader that knew
+  one key said nothing through two new categories; a list of known names would do
+  the same the day a fifth appears.
+- **Each category's instruction**: the registry's own wording first (`meaning` on an
+  object-shaped category, or a top-level `<category>_meaning` beside an array), then
+  this server's line for the four documented categories.
+- **Declared counts are checked per category** (`counts`, v0.4's `count`, or a
+  `count` on the category itself); a disagreement goes into `count_mismatch`, with
+  the measured value in `counts`.
+- **Still `"unknown"`, never `0`** — and now also when the file is not an object, or
+  holds no category at all.
+- The v0.4 two-key form (`files`, `non_citable`) is still read, and marked in
+  `registry_form`.
+- `_test_degraded.py` (new): thirteen known-answer cases, one of them the example
+  registry this repository ships. Fault-injected twice: with categories read from a
+  list of known names, the two unknown-category cases fail; with the empty-registry
+  guard removed, that case fails. A case whose check raises is now a failed case, not
+  a crashed test.
+- `examples/degraded.json` moves to the four-category form; the README section is
+  rewritten, and both of its JSON examples were compared against the shipped file and
+  the server's actual output.
+
 ## v0.4 — 2026-08-11 · What the two backends disagreed about
 
 A line-by-line read of every file in this repository, prompted by nothing going

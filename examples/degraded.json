@@ -1,11 +1,13 @@
 {
-  "generated": "2026-08-02T12:00:00Z",
-  "count": 2,
-  "files": [
-    "examples/corpus/monuments_and_memory.txt",
-    "examples/corpus/oral_history_methods.txt"
+  "version": 4,
+  "generated": "2026-09-28T12:00:00Z",
+  "counts": { "unreliable_recall": 1, "unreliable_order": 0, "not_citable": 1, "delisted": 0 },
+  "unreliable_recall": [
+    { "rel": "examples/corpus/monuments_and_memory.txt", "why": "illustrative: a hostile scan; grep misses what is there" }
   ],
-  "non_citable": [
-    "examples/corpus/oral_history_methods.txt"
-  ]
+  "unreliable_order": [],
+  "not_citable": [
+    { "rel": "examples/corpus/oral_history_methods.txt", "why": "illustrative: no printed original to cite by page" }
+  ],
+  "delisted": []
 }

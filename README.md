@@ -190,8 +190,8 @@ from different queries are not comparable. The original cosine comes back as
 `recall_score`.
 
 **The degradation registry.** Point `SEMANTIC_RECALL_DEGRADED` at a JSON file
-listing corpus files whose text layer you know to be unreliable, and
-`semantic_search_info` will report it. The design decision worth copying even if
+listing corpus files whose text layer you know to be unreliable in some way, and
+`semantic_search_info` will report it. Two design decisions worth copying even if
 you never use this file:
 
 > When the registry cannot be read, the report says **`"unknown"` — never `0`.**
@@ -201,36 +201,61 @@ To anyone deciding whether a search *miss* is evidence, "zero degraded files" an
 result is trustworthy; the second says nothing at all. Defaulting a failed read to
 zero makes the caller assert precisely where it should have held back.
 
-A second key, `non_citable`, is reported separately and is deliberately not added
-to the degraded count. They answer different questions: `files` governs whether a
-*negative* conclusion is trustworthy; `non_citable` governs whether a *positive*
-quote may be used at all. Merging them inflates the first with unrelated reasons.
+> **Every category comes back by name** — never one number for all of them.
 
-**The file it expects** (a runnable copy is at `examples/degraded.json`):
+Files fail in more than one way, and the ways prescribe different, sometimes
+opposite, actions. On a file whose grep is unreliable, a zero hit count proves
+nothing; on a file whose *reading order* is scrambled, grep is fine and a zero still
+counts. One number for all of them tells the caller the wrong thing about every
+category folded into it. (Up to v0.4 this server reported exactly that one number.)
+
+**The file it expects** is the four-category form of alexandria's
+[degradation registry](https://github.com/kengo006/alexandria/blob/main/shared/degradation-registry.md)
+(a runnable copy is at `examples/degraded.json`):
 
 ```json
 {
-  "generated": "2026-08-02T12:00:00Z",
-  "count": 2,
-  "files": [
-    "examples/corpus/monuments_and_memory.txt",
-    "examples/corpus/oral_history_methods.txt"
+  "version": 4,
+  "generated": "2026-09-28T12:00:00Z",
+  "counts": { "unreliable_recall": 1, "unreliable_order": 0, "not_citable": 1, "delisted": 0 },
+  "unreliable_recall": [
+    { "rel": "examples/corpus/monuments_and_memory.txt", "why": "illustrative: a hostile scan; grep misses what is there" }
   ],
-  "non_citable": [
-    "examples/corpus/oral_history_methods.txt"
-  ]
+  "unreliable_order": [],
+  "not_citable": [
+    { "rel": "examples/corpus/oral_history_methods.txt", "why": "illustrative: no printed original to cite by page" }
+  ],
+  "delisted": []
 }
 ```
 
-| key | required | meaning |
-|---|---|---|
-| `files` | **yes** | array of paths whose text layer is unreliable — grep on these can return zero for material that is present. Anything else makes the report `"unknown"`. |
-| `count` | no | your generator's own count. If it disagrees with the length of `files`, the report says so in `count_mismatch` instead of quietly picking one. |
-| `non_citable` | no | array (or an object with a `files` array) of paths that are recallable but have no page-bearing original to quote from. |
-| `generated` | no | passed through untouched, so a consumer can see how stale the registry is. |
+**What comes back**, as `degraded` inside `semantic_search_info`:
 
-Paths are yours to interpret: this server reports counts and shape, it does not
-resolve them against your corpus.
+```json
+{
+  "status": "ok",
+  "generated": "2026-09-28T12:00:00Z",
+  "counts": { "unreliable_recall": 1, "unreliable_order": 0, "not_citable": 1, "delisted": 0 },
+  "meaning": {
+    "unreliable_recall": "grep is unreliable on these files: a zero hit count proves nothing; change file, wording, or access path",
+    "unreliable_order": "grep is reliable and a zero hit count still counts; but never read what sits beside a hit as context, and never quote across lines",
+    "not_citable": "use for leads; never cite a page number from these files, and quote verbatim only where the entry says the wording is final",
+    "delisted": "repaired and off the active list - but read the entry: it may record a limit that outlived the repair"
+  }
+}
+```
+
+| rule | what the server does |
+|---|---|
+| **a category** | any top-level array, or an object with a `files` array — found by structure, not by name. A category this server has never heard of is still reported, and listed in `categories_without_meaning`. |
+| **its instruction** | the registry's own wording first — `meaning` on an object-shaped category, or a top-level `<category>_meaning` beside an array — then this server's line for the four documented categories; `null` where there is neither. |
+| **declared counts** | `counts` (or v0.4's `count`, or a `count` on an object-shaped category). A declared count that disagrees with the entries is reported in `count_mismatch`; the measured value is the one in `counts`. |
+| **`generated`** | passed through untouched, so a consumer can see how stale the registry is. |
+| **unreadable, not an object, or no category at all** | `"status": "unknown"` with a reason, and no counts. |
+
+The v0.4 two-key form (`files`, `non_citable`) is still read, and marked as such in
+`registry_form`. Paths are yours to interpret: this server reports counts and
+shape, it does not resolve them against your corpus.
 
 ## Design notes
 

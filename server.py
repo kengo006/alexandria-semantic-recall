@@ -65,11 +65,14 @@ def semantic_search_deep(query: str, k: int = 8) -> list[dict]:
 @mcp.tool()
 def semantic_search_info() -> dict:
     """Report current index state: backend, model, chunk count, file count, build time,
-    and the degradation registry's self-report.
+    and the degradation registry's self-report - every category by name, with its
+    count and one line of instruction.
 
-    ⚠ Read the degradation block before treating any *miss* as evidence. status
-    "unknown" means the registry could not be read - which is not the same as
-    "no degraded files", and must not be rounded down to zero.
+    ⚠ Read the degradation block before treating any *miss* as evidence, and read it
+    per category: under unreliable_recall a zero hit count proves nothing; under
+    unreliable_order it still counts. status "unknown" means the registry could not
+    be read - which is not the same as "no degraded files", and must not be rounded
+    down to zero.
     """
     out = info()
     out["degraded"] = degraded_status()
