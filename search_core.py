@@ -156,7 +156,8 @@ _MEANINGS = {
     "files": ("(v0.4 key, same as unreliable_recall) grep is unreliable on these files: "
               "a zero hit count proves nothing"),
     "non_citable": ("(v0.4 key, same as not_citable) use for leads; never cite a page number "
-                    "from these files"),
+                    "from these files, and never quote them verbatim: a v0.4 entry cannot say "
+                    "the wording is final"),
 }
 
 
@@ -216,8 +217,8 @@ def degraded_status() -> dict:
             d = json.load(fh)
     except FileNotFoundError:
         return {"status": "unknown", "reason": "registry not found at %s" % DEGRADED_REGISTRY}
-    except (json.JSONDecodeError, OSError) as e:
-        return {"status": "unknown", "reason": "%s: %r" % (type(e).__name__, e)}
+    except (ValueError, OSError) as e:  # JSONDecodeError, and a file that is not UTF-8
+        return {"status": "unknown", "reason": "%s: %s" % (type(e).__name__, e)}
     if not isinstance(d, dict):
         return {"status": "unknown", "reason": "malformed registry: the top level is not an object"}
 

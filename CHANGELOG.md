@@ -29,8 +29,8 @@ from the wrong date.
 - **Declared counts are checked per category** (`counts`, v0.4's `count`, or a
   `count` on the category itself); a disagreement goes into `count_mismatch`, with
   the measured value in `counts`.
-- **Still `"unknown"`, never `0`** — and now also when the file is not an object, or
-  holds no category at all.
+- **Still `"unknown"`, never `0`** — and now also when the file is not an object, is
+  not UTF-8, or holds no category at all.
 - The v0.4 two-key form (`files`, `non_citable`) is still read, and marked in
   `registry_form`.
 - `_test_degraded.py` (new): thirteen known-answer cases, one of them the example
