@@ -32,7 +32,7 @@ If you want general-purpose semantic search over an Obsidian vault, use [Smart C
 
 ## The contract
 
-This implements the interface alexandria documents for its Searcher role:
+This implements the interface alexandria documents for semantic recall ([optional-integrations §2](https://github.com/kengo006/alexandria/blob/main/optional-integrations.md)), used by whichever of its roles is searching:
 
 ```
 search(query, k) -> [{file, page_start, page_end, score, text}, ...]
@@ -115,7 +115,7 @@ Then give your search agent one standing instruction — this is the discipline 
 
 > Use `semantic_search` to *discover* candidate passages, then go back to the source PDF (via the returned file + pages) and read the verbatim text there. Fragments locate; only the source speaks.
 
-alexandria's Searcher role ships with this wiring already described (search path D).
+alexandria's roles ship with this wiring already described (search path D). Since alexandria v4.0 the Writer and the Critic take their own evidence and the Searcher is dispatched for large sweeps and the final audit — so give the tool to each agent that searches, on its `tools:` line.
 
 ## Optional: deep recall, and knowing when a miss means nothing
 
