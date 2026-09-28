@@ -2,12 +2,33 @@
 
 **Local semantic recall for [alexandria](https://github.com/kengo006/alexandria) — the runnable implementation of the reference recipe in its [optional-integrations §2](https://github.com/kengo006/alexandria/blob/main/optional-integrations.md).**
 
+<!-- zh-intro -->
+
+[中文簡介](#中文簡介)
+
+<!-- /zh-intro -->
+
 If you want general-purpose semantic search over an Obsidian vault, use [Smart Connections](https://smartconnections.app/) — it is mature, zero-setup, and built for exactly that. This project exists for a narrower job: serving a **citation-integrity workflow**, where semantic search is allowed to *find* passages but never to *quote* them. Every fragment it returns carries a file path and page numbers so a downstream agent (or you) can walk back to the source PDF and verify. Recall-only, by design and by contract.
 
 - **100% local**: ONNX embeddings via [fastembed](https://github.com/qdrant/fastembed) (no PyTorch), vectors in [LanceDB](https://github.com/lancedb/lancedb) on disk. No API calls, no cost, works offline.
 - **Cross-lingual**: the default multilingual model lets a query in one language recall passages in another — the one thing keyword grep can never do.
 - **Modest hardware is enough**: the upstream production instance indexes over 450,000 chunks from more than 500 source texts on a 16 GB laptop, CPU-only; incremental updates run in about 90 seconds.
 - **MCP, not just CLI**: read-only subagents often have no shell. As an MCP server this attaches `semantic_search` directly to their toolchain.
+
+<!-- zh-intro -->
+
+## 中文簡介
+
+**[alexandria](https://github.com/kengo006/alexandria) 的本地語意召回：它在 [optional-integrations §2](https://github.com/kengo006/alexandria/blob/main/optional-integrations.md) 所寫的參考做法的可執行實作。**
+
+如果你要的是對 Obsidian 知識庫做通用的語意搜尋，請用 [Smart Connections](https://smartconnections.app/)：它成熟、免設定，本來就是為此而做。這個專案只做一件更窄的事：服務一套**引文完整性**的工作流程；在這套流程裡，語意搜尋可以*找到*段落，但永遠不能*引用*它們。它回傳的每個片段都附有檔案路徑與頁碼，讓下游的代理（或你自己）能回到原始 PDF 核對。只負責召回，既是設計，也是約定。
+
+- **100% 本地**：透過 [fastembed](https://github.com/qdrant/fastembed) 做 ONNX 嵌入（不需要 PyTorch），向量以 [LanceDB](https://github.com/lancedb/lancedb) 存在磁碟上。不呼叫任何 API、不花錢、可離線運作。
+- **跨語言**：預設的多語模型能讓一種語言的查詢召回另一種語言的段落，這是關鍵字 grep 永遠做不到的事。
+- **一般硬體就夠**：上游的正式執行個體在一台 16 GB 筆電上只用 CPU，索引了來自 500 多份原始文本的 45 萬多個片段；增量更新大約 90 秒。
+- **是 MCP，不只是 CLI**：唯讀的子代理常常沒有 shell。做成 MCP 伺服器，就能把 `semantic_search` 直接接進它們的工具鏈。
+
+<!-- /zh-intro -->
 
 ## The contract
 
