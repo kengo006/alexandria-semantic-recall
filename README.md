@@ -44,7 +44,7 @@ search(query, k) -> [{file, page_start, page_end, score, text}, ...]
 
 ## Quickstart (5 minutes, synthetic example included)
 
-Requires [uv](https://docs.astral.sh/uv/) and Python ≥ 3.11.
+Requires [uv](https://docs.astral.sh/uv/getting-started/installation/) and Python ≥ 3.11. The model is not bundled: the first build downloads it from Hugging Face, so `huggingface.co` has to be reachable that once. An offline install has not been tested.
 
 ```bash
 git clone https://github.com/kengo006/alexandria-semantic-recall
@@ -60,6 +60,8 @@ uv run python search_core.py "can spoken testimony be trusted as evidence" -k 3
 uv run python server.py
 ```
 
+**Tests** are plain scripts (pytest will not collect them): `uv run python _test_degraded.py` needs nothing else; `_test_incremental.py` and `_test_refresh.py` load the model, so they need the same first-run download.
+
 ## Your own corpus
 
 The input is a **text layer**: a folder tree of `.txt` files, one per source PDF, with page boundaries preserved in either of two formats:
@@ -70,7 +72,7 @@ The input is a **text layer**: a folder tree of `.txt` files, one per source PDF
 How you produce the text layer is up to you — alexandria's optional-integrations §1 describes the conventions. Then:
 
 ```bash
-set CORPUS_ROOT=C:\path\to\your\text-layer     # or export on unix; or pass the path as an argument
+export CORPUS_ROOT=/path/to/your/text-layer    # Windows cmd: set CORPUS_ROOT=C:\path\to\your\text-layer; or pass the path as an argument
 uv run python build_index.py                   # numpy index (index/)
 uv run python migrate_to_lance.py              # -> LanceDB (lance_db/), the serving backend
 uv run python build_lance_index.py             # ANN index for fast queries
@@ -191,8 +193,9 @@ from different queries are not comparable. The original cosine comes back as
 
 **The degradation registry.** Point `SEMANTIC_RECALL_DEGRADED` at a JSON file
 listing corpus files whose text layer you know to be unreliable in some way, and
-`semantic_search_info` will report it. Two design decisions worth copying even if
-you never use this file:
+`semantic_search_info` will report it (once an index exists: before the first build,
+`semantic_search_info` returns an error rather than this report). Two design decisions
+worth copying even if you never use this file:
 
 > When the registry cannot be read, the report says **`"unknown"` — never `0`.**
 
@@ -262,7 +265,7 @@ shape, it does not resolve them against your corpus.
 - **Chunks are sized in tokens (≤120, sentence-aligned), using the embedding model's own tokenizer** — not in characters. The char↔token ratio varies ~3× across languages (Latin prose ≈3.9 chars/token, CJK ≈1.4), so the v0.1 500-character windows silently overflowed the model's 128-token truncation on CJK text: **over half of every CJK chunk never entered the index**, while Western text lost only ~3% — invisible unless you test cross-lingually, which is exactly this tool's headline claim. Measured: embedding a full chunk vs. only its first 128 tokens returns cosine 1.0000. The size floor is in tokens too (a character floor filters CJK chunks out). Chunks stay small because the consumer wants precise pointers, not summaries; page numbers are computed from character offsets against the page marks. Character chunking survives only as a fallback when the `tokenizers` package is unavailable.
 - **Default model** `paraphrase-multilingual-MiniLM-L12-v2` (0.22 GB, 384-dim, CPU): genuinely cross-lingual. In an upstream head-to-head against a larger 8192-token model, recall@5 tied — the small model stays because it is ~1.8× faster, half the vector size, and safe on 16 GB RAM. Swap via `--model` if your needs differ; longer-context models need smaller embedding batches.
 - **Embedding batch defaults to 32**: measured on a 16 GB machine, larger batches with long-sequence models can spike RAM to the ceiling. Tune upward only with monitoring.
-- **fastembed is version-pinned**: a silent pooling change in a future version would make new query vectors inconsistent with an existing index. Unpin deliberately, and rebuild when you do. (On load you may see fastembed's own warning that this model "now uses mean pooling" — it is informational; the pin keeps query-side and index-side pooling consistent, which is what matters.)
+- **fastembed is version-pinned**: a silent pooling change in a future version would make new query vectors inconsistent with an existing index. Unpin deliberately, and rebuild when you do. (On load you may see fastembed's own warning that this model "now uses mean pooling" — it is informational; the pin keeps query-side and index-side pooling consistent, which is what matters.) The pin also holds fastembed's `pillow` dependency below 13.0, so installs get pillow 12.3.0, which has published vulnerability reports fixed in 13.0.0. fastembed 0.9.1 allows pillow 13; moving to it means re-checking pooling and rebuilding the index, so it is left for a separate release.
 - **Dual backend**: LanceDB serves (text + vectors on disk, top-k reads, resident RAM roughly constant — migrating saved ~640 MB at 410k chunks); numpy remains a fallback (delete `lance_db/` to fall back). The `search(query,k)` API is identical on both.
 - **Incremental ids** start at 500,000,000 so they never collide with full-build ids; the query side never reads ids.
 

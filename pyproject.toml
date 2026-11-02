@@ -1,14 +1,16 @@
 [project]
 name = "alexandria-semantic-recall"
-version = "0.5.0"   # keep in step with CHANGELOG.md / the release tag
+version = "0.5.1"   # keep in step with CHANGELOG.md / the release tag
 description = "Local semantic recall MCP server over a page-marked text layer — the reference implementation of alexandria's optional-integrations §2 contract. 100% local, no torch, recall-only by design."
 requires-python = ">=3.11"
 dependencies = [
     "fastembed==0.8.0", # ONNX embeddings, no torch, friendly to 16 GB machines; version PINNED so a future pooling change can't silently break consistency with an existing index
     "numpy>=1.26",
-    "mcp>=1.2",         # official MCP SDK (FastMCP)
+    "mcp>=1.2,<2",      # official MCP SDK (FastMCP). mcp 2.x renamed mcp.server.fastmcp, so server.py cannot import under it; capped until the server is ported
     "lancedb>=0.34.0",
     "tokenizers>=0.15", # index_lib chunks by TOKENS using the embedding model's own tokenizer; without it the char fallback silently truncates CJK chunks (see index_lib docstring). Declared rather than relied on transitively.
+    "pyarrow>=25",      # imported directly by migrate_to_lance.py and two tests; declared for the same reason as tokenizers (floor = the version tested)
+    "huggingface_hub>=1.23", # imported directly by search_core.py (reranker side file); same reason
 ]
 
 [tool.uv]

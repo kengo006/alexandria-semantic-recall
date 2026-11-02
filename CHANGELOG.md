@@ -3,6 +3,27 @@
 This repository is a reference implementation extracted from a live production
 instance; releases are curated snapshots.
 
+## v0.5.1 — 2026-11-02 · Installs again
+
+A clean install of v0.5 failed at the third Quickstart step. `mcp>=1.2` let a fresh
+environment resolve mcp 2.x, which renamed the `mcp.server.fastmcp` module that
+`server.py` imports. mcp 2.0.0 was already out when v0.5 was cut, so the failure dates
+from the release itself. The upstream instance never saw it because its environment is
+locked to mcp 1.28, and this repository ships no lock file. An independent install that
+followed the README literally found it.
+
+- **`mcp` is capped below 2** (`>=1.2,<2`) until the server is ported to the 2.x API.
+- **The first build on a fresh clone chunks by tokens.** `build_index.py` chunked the
+  corpus before loading the model, and loading the model is what downloads its
+  tokenizer, so a first build fell back to character chunking: the failure v0.2 fixed.
+  The model now loads first. The fallback warning now gives the remedy that fits its
+  cause; it used to say "install `tokenizers`" even when the package was installed.
+- **`pyarrow` and `huggingface_hub` are declared.** Both are imported directly and were
+  installed only as dependencies of other packages.
+- README: the first run has to reach huggingface.co; `export` is the main example for
+  `CORPUS_ROOT`; how to run the tests; `semantic_search_info` needs a built index; the
+  fastembed pin keeps pillow at 12.3.0, which has published vulnerability reports.
+
 ## v0.5 — 2026-09-28 · Every category, by name
 
 The degradation self-report was behind the contract it implements. alexandria's

@@ -53,16 +53,18 @@ OVERLAP_TOKENS = 24      # ≈ the v0.1 overlap ratio (100/500)
 MIN_TOKENS = 30          # the floor must be tokens too (see module docstring)
 
 
-def _warn_char_fallback(reason: str) -> None:
+def _warn_char_fallback(reason: str, remedy: str) -> None:
     """The character fallback is a **silent correctness downgrade**, so it must not be
     silent. This module documents that character windows overflow the model's 128-token
     truncation on CJK text — over half of every CJK chunk never reaches the index. A
     cross-lingual recall tool sliding into exactly that, quietly, is worse than stopping.
     Printed once (lru_cache on _tokenizer means this path runs at most once per process).
+    The remedy depends on the reason; one fixed hint sent people to install a package
+    they already had.
     """
     print("[index_lib] WARNING: falling back to CHARACTER chunking — " + reason + "."
           "\n            On CJK text this silently truncates chunks (see module"
-          " docstring). Install `tokenizers` to restore token chunking.",
+          " docstring). " + remedy,
           file=sys.stderr, flush=True)
 
 
@@ -75,7 +77,8 @@ def _tokenizer():
     try:
         from tokenizers import Tokenizer
     except ImportError:
-        _warn_char_fallback("the `tokenizers` package is not installed")
+        _warn_char_fallback("the `tokenizers` package is not installed",
+                            "Install `tokenizers` to restore token chunking.")
         return None
     for root, _dirs, files in os.walk(MODEL_CACHE):
         if "tokenizer.json" in files:
@@ -88,7 +91,9 @@ def _tokenizer():
             except Exception:
                 pass
             return tok
-    _warn_char_fallback("no tokenizer.json found under %s" % MODEL_CACHE)
+    _warn_char_fallback("no tokenizer.json found under %s" % MODEL_CACHE,
+                        "The file arrives with the embedding model: load the model"
+                        " before chunking (build_index.py does), then rebuild.")
     return None
 
 

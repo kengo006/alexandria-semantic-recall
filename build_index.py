@@ -63,16 +63,19 @@ def main():
         sys.exit("no corpus given: pass a folder or set CORPUS_ROOT")
 
     root = os.path.abspath(args.corpus)
-    print(f"[1/4] scanning corpus: {root}")
+    # The model comes first: loading it is what downloads its tokenizer.json, and chunking
+    # looks for that file. Before v0.5.1 the corpus was chunked first, so the first build
+    # on a fresh clone found no tokenizer and fell back to character chunking.
+    print(f"[1/4] loading embedding model: {args.model} (cache {MODEL_CACHE})")
+    from fastembed import TextEmbedding
+    model = TextEmbedding(model_name=args.model, cache_dir=MODEL_CACHE)
+
+    print(f"[2/4] scanning corpus: {root}")
     files, chunks = load_corpus(root)
     print(f"       {len(files)} files -> {len(chunks)} chunks")
     if not chunks:
         print("       nothing to index, aborting.")
         sys.exit(1)
-
-    print(f"[2/4] loading embedding model: {args.model} (cache {MODEL_CACHE})")
-    from fastembed import TextEmbedding
-    model = TextEmbedding(model_name=args.model, cache_dir=MODEL_CACHE)
 
     print(f"[3/4] embedding {len(chunks)} chunks ...")
     t0 = time.time()
