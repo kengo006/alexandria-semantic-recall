@@ -1,4 +1,5 @@
 """Known-answer test for degraded_status(): every category by name, "unknown" never 0.
+Plus the one thing semantic_search_info returns before any index exists: an error that says what to run.
 Temp files only, monkeypatched DEGRADED_REGISTRY; never touches a real registry.
 Run:  uv run --project . python _test_degraded.py
 
@@ -112,6 +113,18 @@ r = at(shipped)
 case("the example registry this repo ships", r,
      lambda r: r["status"] == "ok" and r["counts"] == json.load(open(shipped, encoding="utf-8"))["counts"]
      and "count_mismatch" not in r and "categories_without_meaning" not in r)
+
+# Before the first build, info() is all semantic_search_info can return, so it has to say what to do.
+_saved = (sc.INDEX_DIR, sc.LANCE_DIR)
+sc.INDEX_DIR = os.path.join(tempfile.gettempdir(), "no_such_index_for_this_test")
+sc.LANCE_DIR = os.path.join(tempfile.gettempdir(), "no_such_lance_for_this_test")
+try:
+    sc.info()
+    r = "no error"
+except Exception as e:      # by name, so an older search_core without NoIndex fails this case instead of crashing
+    r = "%s: %s" % (type(e).__name__, e)
+sc.INDEX_DIR, sc.LANCE_DIR = _saved
+case("no index yet -> NoIndex naming build_index.py", r, lambda r: r.startswith("NoIndex: ") and "build_index.py" in r)
 
 bad_n = checks.count(False)
 print("%d of %d as expected. Range: these shapes only." % (len(checks) - bad_n, len(checks)))

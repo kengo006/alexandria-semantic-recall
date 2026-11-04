@@ -3,6 +3,22 @@
 This repository is a reference implementation extracted from a live production
 instance; releases are curated snapshots.
 
+## v0.5.2 — 2026-11-04 · Says what to do before the first build
+
+A second clean-environment install, on v0.5.1, followed the README word for word and
+found three rough edges.
+
+- **Before the first build, every query names the fix.** `semantic_search_info` (and
+  the CLI, and a search) failed with Python's bare `[Errno 2] No such file or directory:
+  '…/index/meta.json'`. They now raise `NoIndex` (a `FileNotFoundError`, so existing
+  handlers still catch it) saying no index has been built and to run `build_index.py`;
+  the CLI prints that line and exits 2. `_test_degraded.py` checks it.
+- **`uv.lock` is ignored.** `uv run` writes one on first use, so a Quickstart left the
+  clone with an untracked file. Whether this repository should ship a lock file (v0.5.1
+  traced its mcp 2.x failure to not shipping one) is still open; until it is decided,
+  the file is ignored, so a Quickstart leaves the clone clean.
+- README: the tests have a heading of their own.
+
 ## v0.5.1 — 2026-11-02 · Installs again
 
 A clean install of v0.5 failed at the third Quickstart step. `mcp>=1.2` let a fresh

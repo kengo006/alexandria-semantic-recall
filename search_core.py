@@ -50,11 +50,21 @@ def _use_lance() -> bool:
     return os.path.isdir(LANCE_DIR)
 
 
+class NoIndex(FileNotFoundError):
+    """No index at the configured paths: nothing has been built yet, or the paths point elsewhere."""
+
+
 def info() -> dict:
     """Index metadata (model/count/...), backend-independent (reads the active backend's meta.json).
     Deliberately uncached: incremental updates to meta become visible in the same
-    session (pairs with _lance_table being uncached)."""
+    session (pairs with _lance_table being uncached).
+    Every query reads this first, so before the first build every caller gets NoIndex, which
+    says what to run, instead of a bare "[Errno 2] No such file or directory: .../meta.json"."""
     p = os.path.join(LANCE_DIR if _use_lance() else INDEX_DIR, "meta.json")
+    if not os.path.isfile(p):
+        raise NoIndex(f"no index has been built yet ({p} does not exist). Build one first: "
+                      "uv run python build_index.py <your corpus folder>; or point SEMANTIC_RECALL_INDEX / "
+                      "SEMANTIC_RECALL_LANCE at an existing index.")
     return json.load(open(p, encoding="utf-8"))
 
 
@@ -366,7 +376,11 @@ def main():
     ap.add_argument("query")
     ap.add_argument("-k", type=int, default=8)
     args = ap.parse_args()
-    m = info()
+    try:
+        m = info()
+    except NoIndex as e:
+        print(f"⛔ {e}")
+        sys.exit(2)
     print(f"# backend: {'LanceDB' if _use_lance() else 'numpy'} · {m['count']} chunks / {m['n_files']} files · model {m['model']}\n")
     for r in search(args.query, args.k):
         print(_fmt(r))

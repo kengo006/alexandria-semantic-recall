@@ -60,7 +60,9 @@ uv run python search_core.py "can spoken testimony be trusted as evidence" -k 3
 uv run python server.py
 ```
 
-**Tests** are plain scripts (pytest will not collect them): `uv run python _test_degraded.py` needs nothing else; `_test_incremental.py` and `_test_refresh.py` load the model, so they need the same first-run download.
+### Tests
+
+The tests are plain scripts (pytest will not collect them): `uv run python _test_degraded.py` needs nothing else; `_test_incremental.py` and `_test_refresh.py` load the model, so they need the same first-run download.
 
 ## Your own corpus
 
@@ -194,7 +196,8 @@ from different queries are not comparable. The original cosine comes back as
 **The degradation registry.** Point `SEMANTIC_RECALL_DEGRADED` at a JSON file
 listing corpus files whose text layer you know to be unreliable in some way, and
 `semantic_search_info` will report it (once an index exists: before the first build,
-`semantic_search_info` returns an error rather than this report). Two design decisions
+`semantic_search_info` returns an error rather than this report, one that names
+`build_index.py`). Two design decisions
 worth copying even if you never use this file:
 
 > When the registry cannot be read, the report says **`"unknown"` — never `0`.**

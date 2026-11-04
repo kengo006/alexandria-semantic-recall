@@ -1,6 +1,6 @@
 [project]
 name = "alexandria-semantic-recall"
-version = "0.5.1"   # keep in step with CHANGELOG.md / the release tag
+version = "0.5.2"   # keep in step with CHANGELOG.md / the release tag
 description = "Local semantic recall MCP server over a page-marked text layer — the reference implementation of alexandria's optional-integrations §2 contract. 100% local, no torch, recall-only by design."
 requires-python = ">=3.11"
 dependencies = [

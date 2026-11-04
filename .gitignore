@@ -10,3 +10,7 @@ model_cache/
 .venv/
 __pycache__/
 *.pyc
+
+# `uv run` writes a lock file on first use. This repository does not ship one yet
+# (whether it should is still open: CHANGELOG v0.5.1), so a run leaves the clone clean.
+uv.lock
